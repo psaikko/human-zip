@@ -56,10 +56,10 @@ while True:
         return chars_before - chars_after
 
     # enumerate substrings and number of occurrences from lcp and suffix arrays
-    maximal_replacement_val = 0
-    maximal_replacement_len = None
-    maximal_replacement_loc = None
-    maximal_replacemant_count = 0
+    max_replacement_val = 0
+    max_replacement_len = None
+    max_replacement_loc = None
+    max_replacemant_count = 0
 
     def sa_substring(suffix_rank, substr_len):
         global text_ids, suffix_array
@@ -67,6 +67,8 @@ while True:
         return text_ids[suffix_begin:suffix_begin + substr_len]
 
     for i, lcp in enumerate(lcp_array[:-1]):
+        if lcp == 1: continue
+
         substr_length = lcp
         substr_count = 2
         substr_value = abbreviation_value(sa_substring(i, substr_length), substr_count)
@@ -81,6 +83,8 @@ while True:
 
             substr_length = min(substr_length, lcp_array[j])
 
+            if substr_length == 1: break
+
             substr_count += 1
             substr_value = abbreviation_value(sa_substring(i, substr_length), substr_count)
 
@@ -89,36 +93,42 @@ while True:
                 best_len = substr_length
                 best_count = substr_count
 
-        
-        #if best_val > 0:
-        print("Len:",best_len, "Val:",best_val, "Count:",best_count)
-        print(" ".join([id_to_word[x] for x in sa_substring(i, best_len)]))
+        if best_val > max_replacement_val:
+            max_replacement_val = best_val
+            max_replacement_loc = i
+            max_replacement_len = best_len
+            max_replacemant_count = best_count
 
-        if best_val > maximal_replacement_val:
-            maximal_replacement_val = best_val
-            maximal_replacement_loc = i
-            maximal_replacement_len = best_len
-            maximal_replacemant_count = best_count
+    if max_replacement_val <= 0: break
 
-    if maximal_replacement_val <= 0: break
+    print("Stats: len %d at %d x%d (score: %d)" % 
+        (max_replacement_len, max_replacement_loc, max_replacemant_count, max_replacement_val))
+    print("<=", " ".join([id_to_word[x] for x in sa_substring(max_replacement_loc, max_replacement_len)]))
 
-    print("best")
-    print(maximal_replacement_val, maximal_replacement_loc, maximal_replacement_len, maximal_replacemant_count)
-    print(" ".join([id_to_word[x] for x in sa_substring(maximal_replacement_loc, maximal_replacement_len)]))
-
-    abbrev_substring = sa_substring(maximal_replacement_loc, maximal_replacement_len)
-    abbrev_words = [id_to_word[x] for x in sa_substring(maximal_replacement_loc, maximal_replacement_len)]
+    abbrev_substring = sa_substring(max_replacement_loc, max_replacement_len)
+    abbrev_words = [id_to_word[x] for x in sa_substring(max_replacement_loc, max_replacement_len)]
     abbreviation = "".join([word[0] for word in abbrev_words]).upper()
+    abbrev_intro = "("+abbreviation+")"
 
     word_to_id[abbreviation] = TOP_IDX
     id_to_word[TOP_IDX] = abbreviation
     TOP_IDX += 1
 
-    print(abbreviation)
+    word_to_id[abbrev_intro] = TOP_IDX
+    id_to_word[TOP_IDX] = abbrev_intro
+    TOP_IDX += 1
 
+    print("=>", abbreviation)
 
-    break
+    first = True
+    i = 0
+    while i < len(text_ids) - len(abbrev_substring):
+        if text_ids[i:i+len(abbrev_substring)] == abbrev_substring:
+            if first:
+                first = False
+                text_ids.insert(i+len(abbrev_substring), word_to_id[abbrev_intro])
+            else:
+                text_ids[i:i+len(abbrev_substring)] = [word_to_id[abbreviation]]
+        i += 1
 
-
-
-
+print(" ".join(id_to_word[i] for i in text_ids[:-1]))
