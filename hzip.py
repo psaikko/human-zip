@@ -13,7 +13,8 @@ text = text.lower()
 word_to_id = {}
 id_to_word = {}
 
-text_words = text.split()
+text_words = text.split()[:10000]
+
 TOP_IDX = 0
 END_TOKEN = 0xFFFFFFFF
 
